@@ -1,5 +1,4 @@
 require 'net/http'
-require 'resolv'
 require 'uri'
 
 class ApplicationController < ActionController::Base
@@ -10,13 +9,7 @@ class ApplicationController < ActionController::Base
   # Example endpoint that calls the backend nodejs api
   def index
     begin
-      req = Net::HTTP::Get.new(nodejs_uri.to_s)
-      res = Net::HTTP.start(nodejs_uri.host, nodejs_uri.port, :use_ssl => nodejs_uri.scheme == 'https') {|http|
-        http.read_timeout = 2
-        http.open_timeout = 2
-        http.request(req)
-      }
-
+      res = Net::HTTP.get_response(nodejs_uri)
       if res.code == '200'
         @text = res.body
       else
@@ -29,13 +22,7 @@ class ApplicationController < ActionController::Base
     end
 
     begin
-      crystalreq = Net::HTTP::Get.new(crystal_uri.to_s)
-      crystalres = Net::HTTP.start(crystal_uri.host, crystal_uri.port, :use_ssl => crystal_uri.scheme == 'https') {|http|
-        http.read_timeout = 2
-        http.open_timeout = 2
-        http.request(crystalreq)
-      }
-
+      crystalres = Net::HTTP.get_response(crystal_uri)
       if crystalres.code == '200'
         @crystal = crystalres.body
       else
@@ -54,37 +41,11 @@ class ApplicationController < ActionController::Base
   end
 
   def crystal_uri
-    expand_url ENV["CRYSTAL_URL"]
+    ENV["CRYSTAL_URL"]
   end
 
   def nodejs_uri
-    expand_url ENV["NODEJS_URL"]
-  end
-
-  # Resolve the SRV records for the hostname in the URL
-  def expand_url(url)
-    uri = URI(url)
-    resolver = Resolv::DNS.new()
-
-    # if host is relative, append the service discovery name
-    host = uri.host.count('.') > 0 ? uri.host : "#{uri.host}.#{ENV["_SERVICE_DISCOVERY_NAME"]}"
-
-    # lookup the SRV record and use if found
-    begin
-      srv = resolver.getresource(host, Resolv::DNS::Resource::IN::SRV)
-      uri.host = srv.target.to_s
-      uri.port = srv.port.to_s
-      logger.info "uri port is #{uri.port}"
-      if uri.port == 0
-        uri.port = 80
-        logger.info "uri port is now #{uri.port}"
-      end
-    rescue => e
-      logger.error e.message
-    end
-
-    logger.info "expanded #{url} to #{uri}"
-    uri
+    ENV["NODEJS_URL"]
   end
 
   before_action :discover_availability_zone
