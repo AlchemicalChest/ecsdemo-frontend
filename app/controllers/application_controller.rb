@@ -9,7 +9,7 @@ class ApplicationController < ActionController::Base
   # Example endpoint that calls the backend nodejs api
   def index
     begin
-      res = Net::HTTP.get_response(nodejs_uri)
+      res = Net::HTTP.get_response(URI(nodejs_uri))
       if res.code == '200'
         @text = res.body
       else
@@ -22,7 +22,7 @@ class ApplicationController < ActionController::Base
     end
 
     begin
-      crystalres = Net::HTTP.get_response(crystal_uri)
+      crystalres = Net::HTTP.get_response(URI(crystal_uri))
       if crystalres.code == '200'
         @crystal = crystalres.body
       else
